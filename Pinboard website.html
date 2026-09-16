@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pinboard: Share your thoughts on social media</title>
+  <style>
+    body {
+      background: url('corkboard.jpg');
+      background-size: cover;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      text-align: center;
+      font-weight: normal;
+      color: #555;
+      margin-top: 0;
+      margin-bottom: 30px;
+    }
+
+    #noteForm {
+      background: #fff;
+      padding: 20px;
+      width: 350px;
+      margin: 20px auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    #noteForm textarea, #noteForm input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    #noteForm button {
+      width: 100%;
+      padding: 10px;
+      background: #f39c12;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 15px;
+      color: #fff;
+      transition: background 0.3s ease;
+    }
+
+    #noteForm button:hover {
+      background: #d35400;
+    }
+
+    .note {
+      width: 220px;
+      min-height: 150px;
+      background: #fff9c4;
+      padding: 15px;
+      margin: 15px;
+      box-shadow: 2px 4px 8px rgba(0,0,0,0.2);
+      box-sizing: border-box;
+      border-radius: 8px;
+      transform: rotate(-2deg);
+      transition: transform 0.2s ease;
+    }
+
+    .note:hover {
+      transform: rotate(0deg) scale(1.05);
+    }
+
+    .note p {
+      margin-top: 0;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .note small {
+      display: block;
+      margin-top: 10px;
+      color: #555;
+      font-style: italic;
+    }
+
+    #board {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pinboard: Share your thoughts on social media</h1>
+  <h2>...and how it has affected you</h2>
+
+  <div id="board"></div>
+
+  <form id="noteForm">
+    <textarea id="noteText" placeholder="Write your thought..." required></textarea>
+    <input type="text" id="noteName" placeholder="Your name (optional)">
+    <button type="submit">Pin it!</button>
+  </form>
+
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const { createClient } = supabase;
+
+    // Supabase project details
+    const supabaseUrl = "https://kplfpclgpnreyiqerjmd.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwbGZwY2xncG5yZXlpcWVyam1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NzUyNzcsImV4cCI6MjEwNTE1MTI3N30.zBpxW1EagGoAV_3fkt5hPdHDt9dIKqYVz9BP-cX2plc";
+    const db = createClient(supabaseUrl, supabaseKey);
+
+    async function loadNotes() {
+      const { data, error } = await db
+        .from('notes')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error("Error loading notes:", error);
+        return;
+      }
+
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+      data.forEach(noteData => {
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.innerHTML = `<p>${noteData.text}</p><small>- ${noteData.name}</small>`;
+        board.appendChild(note);
+      });
+    }
+
+    document.getElementById('noteForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const text = document.getElementById('noteText').value.trim();
+      const name = document.getElementById('noteName').value.trim() || "Anonymous";
+      if (text === '') return;
+
+      const { error } = await db
+        .from('notes')
+        .insert([{ text: text, name: name }]);
+
+      if (error) {
+        console.error("Error inserting note:", error);
+      } else {
+        loadNotes(); // refresh board
+      }
+
+      document.getElementById('noteText').value = '';
+      document.getElementById('noteName').value = '';
+    });
+
+    // Load notes when page opens
+    loadNotes();
+  </script>
+</body>
+</html>
+
